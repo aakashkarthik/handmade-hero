@@ -42,5 +42,27 @@ int WinMain(HINSTANCE instance,
 	WindowClass.lpszClassName = TEXT("handmadeherowindow");
 
 	RegisterClass(&WindowClass);
+	CreateWindowEx(0, WindowClass.lpszClassName, TEXT("Aakash's Window"), WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, instance, NULL);
+	
+	for (;;)
+	{
+		MSG message;
+		int return_value = GetMessage(&message, NULL, 0, 0);
+		if (return_value > 0)
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+		else if (return_value == 0)
+			break;
+		else if (return_value == -1)
+		{
+			MessageBox(NULL, TEXT("Error occured.Closing Window"), NULL, MB_OK|MB_ICONERROR);
+			break;
+		}
+
+	}
+	
 	return 0;
 }
