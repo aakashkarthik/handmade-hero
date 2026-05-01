@@ -10,12 +10,25 @@ LRESULT CALLBACK Manage(
 )
 {
 	LRESULT result = 0;
-	PAINTSTRUCT paint;
 	switch (Message)
 	{
 	case WM_PAINT:
 	{
-		BeginPaint(Window, &paint);
+		PAINTSTRUCT paint;
+		HDC hdc = BeginPaint(Window, &paint);
+
+		int x = paint.rcPaint.top;
+		int y = paint.rcPaint.left;
+		int width = paint.rcPaint.right - paint.rcPaint.left;
+		int height = paint.rcPaint.bottom - paint.rcPaint.top;
+		static DWORD rastorOp = WHITENESS;
+
+		PatBlt(hdc, x, y, width, height, rastorOp);
+		if (rastorOp == WHITENESS)
+			rastorOp = BLACKNESS;
+		else
+			rastorOp = WHITENESS;
+
 		EndPaint(Window, &paint);
 	}break;
 	case WM_DESTROY:
