@@ -21,13 +21,9 @@ LRESULT CALLBACK Manage(
 		int y = paint.rcPaint.left;
 		int width = paint.rcPaint.right - paint.rcPaint.left;
 		int height = paint.rcPaint.bottom - paint.rcPaint.top;
-		static DWORD rastorOp = WHITENESS;
+		static DWORD rastorOp = BLACKNESS;
 
 		PatBlt(hdc, x, y, width, height, rastorOp);
-		if (rastorOp == WHITENESS)
-			rastorOp = BLACKNESS;
-		else
-			rastorOp = WHITENESS;
 
 		EndPaint(Window, &paint);
 	}break;
@@ -67,14 +63,8 @@ int WinMain(HINSTANCE instance,
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 		}
-		else if (return_value == 0)
+		else
 			break;
-		else if (return_value == -1)
-		{
-			MessageBox(NULL, TEXT("Error occured.Closing Window"), NULL, MB_OK|MB_ICONERROR);
-			break;
-		}
-
 	}
 	
 	return 0;
