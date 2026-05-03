@@ -129,7 +129,7 @@ int WinMain(HINSTANCE instance,
 			SRCCOPY);
 
 		FillBuffer(Bitmap_height, Bitmap_width, x, y);
-		x += 0;
+		x += 1;
 		y += 0;
 	}
 	
