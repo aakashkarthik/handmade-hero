@@ -2,27 +2,31 @@
 #include <stdint.h>
 
 #pragma warning (disable:28251)
-
-static LPVOID BitmapMemory;
 static BOOL Running;
-static int Bitmap_width;
-static int Bitmap_height;
-BITMAPINFO bitmap;
+
+struct Buffer
+{
+	BITMAPINFO info;
+	LPVOID Memory;
+	int width;
+	int height;
+}Bitmap;
 
 static void FillBuffer(int height,
 					   int width,
 					   int x_offset,
 					   int y_offset)
 {
-		uint8_t* rgb = (uint8_t*)BitmapMemory;
+	UNREFERENCED_PARAMETER(y_offset);
+		uint8_t* rgb = (uint8_t*)Bitmap.Memory;
 		for (int y = 0; y < height; y++)
 		{
 			for (int x = 0; x < width; x++)
 			{
-				*rgb = (uint8_t)(x + x_offset);//Blue
+				*rgb = (uint8_t)(x + y + x_offset);//Blue
 				rgb++;
 
-				*rgb = (uint8_t)(y + y_offset);//Green
+				*rgb = (uint8_t)(y + x_offset);//Green
 				rgb++;
 
 				*rgb = 0;//Red
@@ -38,9 +42,14 @@ static void CreateBuffer(int height,
 						 int width)
 {
 	int size = height * width * 4;//bytes per pixel for me 32/8
-	if(BitmapMemory)
-		VirtualFree(BitmapMemory, 0, MEM_RELEASE);
-	BitmapMemory = VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_READWRITE);
+	Bitmap.width = width;
+	Bitmap.height = height;
+	Bitmap.info.bmiHeader.biWidth = width;
+	Bitmap.info.bmiHeader.biHeight = -height;
+
+	if(Bitmap.Memory)
+		VirtualFree(Bitmap.Memory, 0, MEM_RELEASE);
+	Bitmap.Memory = VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_READWRITE);
 }
 
 LRESULT CALLBACK Manage(
@@ -57,25 +66,18 @@ LRESULT CALLBACK Manage(
 	{
 		PAINTSTRUCT paint;
 		HDC hdc = BeginPaint(Window, &paint);
-		int x = paint.rcPaint.top;
-		int y = paint.rcPaint.left;
 		int width = paint.rcPaint.right - paint.rcPaint.left;
 		int height = paint.rcPaint.bottom - paint.rcPaint.top;
-		Bitmap_width = width;
-		Bitmap_height = height;
-		bitmap.bmiHeader.biSize = sizeof(bitmap.bmiHeader);
-		bitmap.bmiHeader.biWidth = width;
-		bitmap.bmiHeader.biHeight = -height;
-		bitmap.bmiHeader.biPlanes = 1;
-		bitmap.bmiHeader.biBitCount = 32;
-		bitmap.bmiHeader.biCompression = BI_RGB;
-		CreateBuffer(height, width);
-		FillBuffer(height, width, 0, 0);
+		Bitmap.info.bmiHeader.biSize = sizeof(Bitmap.info.bmiHeader);
+		Bitmap.info.bmiHeader.biPlanes = 1;
+		Bitmap.info.bmiHeader.biBitCount = 32;
+		Bitmap.info.bmiHeader.biCompression = BI_RGB;
+		FillBuffer(Bitmap.height, Bitmap.width, 0, 0);
 		StretchDIBits(hdc,
-					  x, y, width, height,
-					  x, y, width, height,
-					  BitmapMemory,
-					  &bitmap,
+					  0, 0, width, height,
+					  0, 0, Bitmap.width, Bitmap.height,
+					  Bitmap.Memory,
+					  &Bitmap.info,
 					  DIB_RGB_COLORS,
 					  SRCCOPY);
 		EndPaint(Window, &paint);
@@ -109,28 +111,35 @@ int WinMain(HINSTANCE instance,
 				   WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 				   CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 				   0, 0, instance, NULL);
+	CreateBuffer(1920, 1080);
 	
 	int x = 0, y = 0;
 	Running = true;
 	while(Running)
 	{
-		MSG message;
-		while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
+		MSG msg;
+		while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage(&message);
-			DispatchMessage(&message);
+			if(msg.message == WM_QUIT)
+				Running = false;
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
 		}
+		RECT ClientRect;
+		GetClientRect(Handle, &ClientRect);
+		int width = ClientRect.right - ClientRect.left;
+		int height = ClientRect.bottom - ClientRect.top;
 		StretchDIBits(GetDC(Handle),
-			0, 0, Bitmap_width, Bitmap_height,
-			0, 0, Bitmap_width, Bitmap_height,
-			BitmapMemory,
-			&bitmap,
+			0, 0, width, height,
+			0, 0, Bitmap.width, Bitmap.height,
+			Bitmap.Memory,
+			&Bitmap.info,
 			DIB_RGB_COLORS,
 			SRCCOPY);
 
-		FillBuffer(Bitmap_height, Bitmap_width, x, y);
-		x += 1;
-		y += 0;
+		FillBuffer(Bitmap.height, Bitmap.width, x, y);
+		x += 10;
+		y += 10;
 	}
 	
 	return 0;
